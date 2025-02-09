@@ -66,6 +66,19 @@ public abstract class ItemInHandRendererMixin {
         if (d != 0) poseStack.translate((humanoidArm == HumanoidArm.RIGHT ? 1 : -1) * d / 4, 0, d / 4);
     }
 
+    @ModifyArg(
+        method = "renderArmWithItem",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"
+        ),
+        index = 6 // Target the 6th parameter (float)
+    )
+    private float modifyEquippedProgress(float originalProgress) {
+        // Modify the float value as needed
+        return originalProgress * 0.5f; // Example: Reduce the progress by half
+    }
+
     @Inject(method = "renderArmWithItem", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V", shift = At.Shift.AFTER), cancellable = true)
     private void renderArmWithItem(AbstractClientPlayer abstractClientPlayer, float f, float g, InteractionHand interactionHand, float h, ItemStack itemStack, float i, PoseStack poseStack, MultiBufferSource multiBufferSource, int j, CallbackInfo ci) {
         if (!abstractClientPlayer.getUseItem().is(Items.CROSSBOW)) return;
@@ -120,17 +133,19 @@ public abstract class ItemInHandRendererMixin {
         this.applyItemArmAttackTransform(poseStack, humanoidArm, h);
     }
 
+    //? if <1.21.4 {
     @Inject(method = "renderArmWithItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;applyItemArmTransform(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/entity/HumanoidArm;F)V", shift = At.Shift.AFTER, ordinal = 4))
     private void renderArmWithItemBlockAnim(AbstractClientPlayer abstractClientPlayer, float f, float g, InteractionHand interactionHand, float h, ItemStack itemStack, float i, PoseStack poseStack, MultiBufferSource multiBufferSource, int j, CallbackInfo ci) {
-        if (LegacyConfig.hasCommonConfigEnabled(LegacyConfig.legacySwordBlocking)) {
+        if (LegacyConfig.hasCommonConfigEnabled(LegacyConfig.legacySwordBlocking) && !(itemStack.getItem() instanceof ShieldItem)) {
             boolean bl = interactionHand == InteractionHand.MAIN_HAND;
             HumanoidArm humanoidArm = bl ? abstractClientPlayer.getMainArm() : abstractClientPlayer.getMainArm().getOpposite();
+            int q = humanoidArm == HumanoidArm.RIGHT ? 1 : -1;
             this.applyItemArmAttackTransform(poseStack, humanoidArm, h);
             poseStack.translate(-0.14142136F, 0.08F, 0.14142136F);
             poseStack.mulPose(Axis.XP.rotationDegrees(-102.25F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(13.365F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(78.05F));
-
+            poseStack.mulPose(Axis.YP.rotationDegrees((float)q * 13.365F));
+            poseStack.mulPose(Axis.ZP.rotationDegrees((float)q * 78.05F));
         }
     }
+    //?}
 }
